@@ -1,5 +1,9 @@
+# Original Version: Taehoon Kim (http://carpedm20.github.io)
+#   + Source: https://github.com/carpedm20/DCGAN-tensorflow/blob/e30539fb5e20d5a0fed40935853da97e9e55eee8/ops.py
+#   + License: MIT
+
 import math
-import numpy as np 
+import numpy as np
 import tensorflow as tf
 
 from tensorflow.python.framework import ops
@@ -64,7 +68,7 @@ def conv_cond_concat(x, y):
     y_shapes = y.get_shape()
     return tf.concat(3, [x, y*tf.ones([x_shapes[0], x_shapes[1], x_shapes[2], y_shapes[3]])])
 
-def conv2d(input_, output_dim, 
+def conv2d(input_, output_dim,
            k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
            name="conv2d"):
     with tf.variable_scope(name):
@@ -73,18 +77,19 @@ def conv2d(input_, output_dim,
         conv = tf.nn.conv2d(input_, w, strides=[1, d_h, d_w, 1], padding='SAME')
 
         biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
-        conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
+        # conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
+        conv = tf.nn.bias_add(conv, biases)
 
         return conv
 
-def deconv2d(input_, output_shape,
-             k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
-             name="deconv2d", with_w=False):
+def conv2d_transpose(input_, output_shape,
+                     k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
+                     name="conv2d_transpose", with_w=False):
     with tf.variable_scope(name):
         # filter : [height, width, output_channels, in_channels]
         w = tf.get_variable('w', [k_h, k_h, output_shape[-1], input_.get_shape()[-1]],
                             initializer=tf.random_normal_initializer(stddev=stddev))
-        
+
         try:
             deconv = tf.nn.conv2d_transpose(input_, w, output_shape=output_shape,
                                 strides=[1, d_h, d_w, 1])
@@ -95,7 +100,8 @@ def deconv2d(input_, output_shape,
                                 strides=[1, d_h, d_w, 1])
 
         biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
-        deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
+        # deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
+        deconv = tf.nn.bias_add(deconv, biases)
 
         if with_w:
             return deconv, w, biases
