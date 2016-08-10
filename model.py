@@ -132,7 +132,7 @@ class DCGAN(object):
             [self.z_sum, self.d__sum, self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
         self.d_sum = tf.merge_summary(
             [self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
-        self.writer = tf.train.SummaryWriter("./logs", self.sess.graph_def)
+        self.writer = tf.train.SummaryWriter("./logs", self.sess.graph)
 
         sample_z = np.random.uniform(-1, 1, size=(self.sample_size , self.z_dim))
         sample_files = data[0:self.sample_size]
@@ -335,6 +335,7 @@ class DCGAN(object):
         return tf.nn.tanh(h4)
 
     def save(self, checkpoint_dir, step):
+        model_name = "DCGAN.model"
         checkpoint_dir = os.path.join(checkpoint_dir)
 
         if not os.path.exists(checkpoint_dir):
