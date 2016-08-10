@@ -279,7 +279,7 @@ class DCGAN(object):
                                            'completed/{:04d}.png'.format(i))
                     save_images(completeed[:batchSz,:,:,:], [nRows,nCols], imgName)
 
-    def discriminator(self, image, reuse=False, y=None):
+    def discriminator(self, image, reuse=False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
 
@@ -291,7 +291,7 @@ class DCGAN(object):
 
         return tf.nn.sigmoid(h4), h4
 
-    def generator(self, z, y=None):
+    def generator(self, z):
         self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*8*4*4, 'g_h0_lin', with_w=True)
 
         self.h0 = tf.reshape(self.z_, [-1, 4, 4, self.gf_dim * 8])
