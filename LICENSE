@@ -1,15 +1,11 @@
 Most of the code in this repository was written by modifying a duplicate of
 Taehoon Kim's DCGAN-tensorflow project:
-https://github.com/carpedm20/DCGAN-tensorflow/blob/master/LICENSE
+https://github.com/carpedm20/DCGAN-tensorflow
 
 The modifications are Copyright (c) 2016 Brandon Amos
 
 In compliance with the license for DCGAN-tensorflow, we reproduce the license
 statement below, and release the code in this directory under the same license.
-
-Some of our modifications introduced code from the TensorFlow tutorials, which
-are released under the Apache license. We reproduce the Apache license below
-as well.
 
 
 The MIT License (MIT)
