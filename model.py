@@ -105,7 +105,7 @@ class DCGAN(object):
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
 
-        self.saver = tf.train.Saver()
+        self.saver = tf.train.Saver(max_to_keep=1)
 
         # Completion.
         self.mask = tf.placeholder(tf.float32, [None] + self.image_shape, name='mask')
@@ -343,8 +343,7 @@ class DCGAN(object):
 
         self.saver.save(self.sess,
                         os.path.join(checkpoint_dir, model_name),
-                        global_step=step,
-                        max_to_keep=1)
+                        global_step=step)
 
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoints...")
