@@ -343,7 +343,8 @@ class DCGAN(object):
 
         self.saver.save(self.sess,
                         os.path.join(checkpoint_dir, model_name),
-                        global_step=step)
+                        global_step=step,
+                        max_to_keep=1)
 
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoints...")
