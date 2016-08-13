@@ -29,7 +29,7 @@ assert(os.path.exists(args.checkpointDir))
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-with tf.Session(config) as sess:
+with tf.Session(config=config) as sess:
     dcgan = DCGAN(sess, image_size=args.imgSize,
                   checkpoint_dir=args.checkpointDir, lam=args.lam)
     dcgan.complete(args)
