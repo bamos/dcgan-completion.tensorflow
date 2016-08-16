@@ -64,6 +64,8 @@ class DCGAN(object):
         self.checkpoint_dir = checkpoint_dir
         self.build_model()
 
+        self.model_name = "DCGAN.model"
+
     def build_model(self):
         self.images = tf.placeholder(
             tf.float32, [None] + self.image_shape, name='real_images')
@@ -334,26 +336,19 @@ class DCGAN(object):
         return tf.nn.tanh(h4)
 
     def save(self, checkpoint_dir, step):
-        model_name = "DCGAN.model"
-        checkpoint_dir = os.path.join(checkpoint_dir)
-
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
         self.saver.save(self.sess,
-                        os.path.join(checkpoint_dir, model_name),
+                        os.path.join(checkpoint_dir, self.model_name),
                         global_step=step)
 
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoints...")
 
-        model_dir = str(self.batch_size)
-        checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
-
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
-            ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
-            self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
+            self.saver.restore(self.sess, ckpt.model_checkpoint_path)
             return True
         else:
             return False
