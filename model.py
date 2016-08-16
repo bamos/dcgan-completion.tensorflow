@@ -223,6 +223,8 @@ class DCGAN(object):
             mask[l:u, l:u, :] = 0.0
         elif config.maskType == 'left':
             assert(False)
+        elif config.maskType == 'full':
+            mask = np.ones(self.image_shape)
         else:
             assert(False)
 
