@@ -8,3 +8,5 @@
   [DCGAN-tensorflow](https://github.com/carpedm20/DCGAN-tensorflow) project,
   which is MIT-licensed.
   My modifications are also [MIT-licensed](./LICENSE).
++ The [./checkpoint](./checkpoint) directory contains a pre-trained
+  model for faces used in the blog post.
