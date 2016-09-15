@@ -1,6 +1,8 @@
 # Image Completion with Deep Learning in TensorFlow
 
+<center>
 ![](/completion.compressed.gif)
+</center>
 
 + [See my blog post for more details and usage instructions](http://bamos.github.io/2016/08/09/deep-completion/).
 + This repository implements Raymond Yeh and Chen Chen et al.'s paper
