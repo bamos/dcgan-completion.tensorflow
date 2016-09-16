@@ -144,9 +144,27 @@ class DCGAN(object):
         start_time = time.time()
 
         if self.load(self.checkpoint_dir):
-            print(" [*] Load SUCCESS")
+            print("""
+
+======
+An existing model was found in the checkpoint directory.
+If you just cloned this repository, it's Brandon Amos'
+trained model for faces that's used in the post.
+If you want to train a new model from scratch,
+delete the checkpoint directory or specify a different
+--checkpoint_dir argument.
+======
+
+""")
         else:
-            print(" [!] Load failed...")
+            print("""
+
+======
+An existing model was not found in the checkpoint directory.
+Initializing a new one.
+======
+
+""")
 
         for epoch in xrange(config.epoch):
             data = glob(os.path.join(config.dataset, "*.png"))
