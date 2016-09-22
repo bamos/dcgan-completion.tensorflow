@@ -230,7 +230,9 @@ Initializing a new one.
 
         batch_idxs = int(np.ceil(nImgs/self.batch_size))
         if config.maskType == 'random':
-            assert(False)
+            fraction_masked = 0.2
+            mask = np.ones(self.image_shape)
+            mask[np.random.random(self.image_shape[:2]) < fraction_masked] = 0.0
         elif config.maskType == 'center':
             scale = 0.25
             assert(scale <= 0.5)
@@ -240,7 +242,9 @@ Initializing a new one.
             u = int(self.image_size*(1.0-scale))
             mask[l:u, l:u, :] = 0.0
         elif config.maskType == 'left':
-            assert(False)
+            mask = np.ones(self.image_shape)
+            c = self.image_size // 2
+            mask[:,:c,:] = 0.0
         elif config.maskType == 'full':
             mask = np.ones(self.image_shape)
         else:
