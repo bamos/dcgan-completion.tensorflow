@@ -284,7 +284,7 @@ Initializing a new one.
                 v_prev = np.copy(v)
                 v = config.momentum*v - config.lr*g[0]
                 zhats += -config.momentum * v_prev + (1+config.momentum)*v
-                np.clip(zhats, -1, 1)
+                zhats = np.clip(zhats, -1, 1)
 
                 if i % 50 == 0:
                     print(i, np.mean(loss[0:batchSz]))
