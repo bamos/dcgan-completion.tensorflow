@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Brandon Amos (http://bamos.github.io)
 # License: MIT
