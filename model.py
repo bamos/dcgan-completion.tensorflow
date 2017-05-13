@@ -223,7 +223,10 @@ Initializing a new one.
         os.makedirs(os.path.join(config.outDir, 'hats_imgs'), exist_ok=True)
         os.makedirs(os.path.join(config.outDir, 'completed'), exist_ok=True)
 
-        tf.initialize_all_variables().run()
+        try:
+            tf.global_variables_initializer().run()
+        except:
+            tf.initialize_all_variables().run()
 
         isLoaded = self.load(self.checkpoint_dir)
         assert(isLoaded)
@@ -269,6 +272,7 @@ Initializing a new one.
 
             batch_mask = np.resize(mask, [self.batch_size] + self.image_shape)
             zhats = np.random.uniform(-1, 1, size=(self.batch_size, self.z_dim))
+            m = 0
             v = 0
 
             nRows = np.ceil(batchSz/8)
@@ -289,9 +293,13 @@ Initializing a new one.
                 run = [self.complete_loss, self.grad_complete_loss, self.G]
                 loss, g, G_imgs = self.sess.run(run, feed_dict=fd)
 
+                m_prev = np.copy(m)
                 v_prev = np.copy(v)
-                v = config.momentum*v - config.lr*g[0]
-                zhats += -config.momentum * v_prev + (1+config.momentum)*v
+                m = config.beta1 * m_prev + (1 - config.beta1) * g[0]
+                v = config.beta2 * v_prev + (1 - config.beta2) * np.multiply(g[0], g[0])
+                m_hat = m / (1 - config.beta1 ** (i + 1))
+                v_hat = v / (1 - config.beta2 ** (i + 1))
+                zhats += - np.true_divide(config.lr * m_hat, (np.sqrt(v_hat) + config.eps))
                 zhats = np.clip(zhats, -1, 1)
 
                 if i % 50 == 0:
