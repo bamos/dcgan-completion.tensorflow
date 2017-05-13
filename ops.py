@@ -17,11 +17,11 @@ class batch_norm(object):
             self.epsilon = epsilon
             self.momentum = momentum
 
-            self.ema = tf.train.ExponentialMovingAverage(decay=self.momentum)
             self.name = name
 
-    def __call__(self, x, train=True):
-        return tf.contrib.layers.batch_norm(x, decay=self.momentum, updates_collections=None, epsilon=self.epsilon, scale=True, scope=self.name)
+    def __call__(self, x, train):
+        return tf.contrib.layers.batch_norm(x, decay=self.momentum, updates_collections=None, epsilon=self.epsilon,
+                                            center=True, scale=True, is_training=train, scope=self.name)
 
 def binary_cross_entropy(preds, targets, name=None):
     """Computes binary cross entropy given `preds`.

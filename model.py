@@ -67,6 +67,7 @@ class DCGAN(object):
         self.model_name = "DCGAN.model"
 
     def build_model(self):
+        self.is_training = tf.placeholder(tf.bool, name='is_training')
         self.images = tf.placeholder(
             tf.float32, [None] + self.image_shape, name='real_images')
         self.sample_images= tf.placeholder(
@@ -77,7 +78,6 @@ class DCGAN(object):
         self.G = self.generator(self.z)
         self.D, self.D_logits = self.discriminator(self.images)
 
-        self.sampler = self.sampler(self.z)
         self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
 
         self.d_sum = tf.summary.histogram("d", self.D)
@@ -184,22 +184,22 @@ Initializing a new one.
 
                 # Update D network
                 _, summary_str = self.sess.run([d_optim, self.d_sum],
-                    feed_dict={ self.images: batch_images, self.z: batch_z })
+                    feed_dict={ self.images: batch_images, self.z: batch_z, self.is_training: True })
                 self.writer.add_summary(summary_str, counter)
 
                 # Update G network
                 _, summary_str = self.sess.run([g_optim, self.g_sum],
-                    feed_dict={ self.z: batch_z })
+                    feed_dict={ self.z: batch_z, self.is_training: True })
                 self.writer.add_summary(summary_str, counter)
 
                 # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
                 _, summary_str = self.sess.run([g_optim, self.g_sum],
-                    feed_dict={ self.z: batch_z })
+                    feed_dict={ self.z: batch_z, self.is_training: True })
                 self.writer.add_summary(summary_str, counter)
 
-                errD_fake = self.d_loss_fake.eval({self.z: batch_z})
-                errD_real = self.d_loss_real.eval({self.images: batch_images})
-                errG = self.g_loss.eval({self.z: batch_z})
+                errD_fake = self.d_loss_fake.eval({self.z: batch_z, self.is_training: False})
+                errD_real = self.d_loss_real.eval({self.images: batch_images, self.is_training: False})
+                errG = self.g_loss.eval({self.z: batch_z, self.is_training: False})
 
                 counter += 1
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
@@ -208,8 +208,8 @@ Initializing a new one.
 
                 if np.mod(counter, 100) == 1:
                     samples, d_loss, g_loss = self.sess.run(
-                        [self.sampler, self.d_loss, self.g_loss],
-                        feed_dict={self.z: sample_z, self.images: sample_images}
+                        [self.G, self.d_loss, self.g_loss],
+                        feed_dict={self.z: sample_z, self.images: sample_images, self.is_training: False}
                     )
                     save_images(samples, [8, 8],
                                 './samples/train_{:02d}_{:04d}.png'.format(epoch, idx))
@@ -284,6 +284,7 @@ Initializing a new one.
                     self.z: zhats,
                     self.mask: batch_mask,
                     self.images: batch_images,
+                    self.is_training: False
                 }
                 run = [self.complete_loss, self.grad_complete_loss, self.G]
                 loss, g, G_imgs = self.sess.run(run, feed_dict=fd)
@@ -312,11 +313,11 @@ Initializing a new one.
             if reuse:
                 #tf.get_variable_scope().reuse_variables()
                 scope.reuse_variables()
-    
+
             h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
-            h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim*2, name='d_h1_conv')))
-            h2 = lrelu(self.d_bn2(conv2d(h1, self.df_dim*4, name='d_h2_conv')))
-            h3 = lrelu(self.d_bn3(conv2d(h2, self.df_dim*8, name='d_h3_conv')))
+            h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim*2, name='d_h1_conv'), self.is_training))
+            h2 = lrelu(self.d_bn2(conv2d(h1, self.df_dim*4, name='d_h2_conv'), self.is_training))
+            h3 = lrelu(self.d_bn3(conv2d(h2, self.df_dim*8, name='d_h3_conv'), self.is_training))
             h4 = linear(tf.reshape(h3, [-1, 8192]), 1, 'd_h3_lin')
     
             return tf.nn.sigmoid(h4), h4
@@ -326,44 +327,22 @@ Initializing a new one.
             self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*8*4*4, 'g_h0_lin', with_w=True)
     
             self.h0 = tf.reshape(self.z_, [-1, 4, 4, self.gf_dim * 8])
-            h0 = tf.nn.relu(self.g_bn0(self.h0))
+            h0 = tf.nn.relu(self.g_bn0(self.h0, self.is_training))
     
             self.h1, self.h1_w, self.h1_b = conv2d_transpose(h0,
                 [self.batch_size, 8, 8, self.gf_dim*4], name='g_h1', with_w=True)
-            h1 = tf.nn.relu(self.g_bn1(self.h1))
+            h1 = tf.nn.relu(self.g_bn1(self.h1, self.is_training))
     
             h2, self.h2_w, self.h2_b = conv2d_transpose(h1,
                 [self.batch_size, 16, 16, self.gf_dim*2], name='g_h2', with_w=True)
-            h2 = tf.nn.relu(self.g_bn2(h2))
+            h2 = tf.nn.relu(self.g_bn2(h2, self.is_training))
     
             h3, self.h3_w, self.h3_b = conv2d_transpose(h2,
                 [self.batch_size, 32, 32, self.gf_dim*1], name='g_h3', with_w=True)
-            h3 = tf.nn.relu(self.g_bn3(h3))
+            h3 = tf.nn.relu(self.g_bn3(h3, self.is_training))
     
             h4, self.h4_w, self.h4_b = conv2d_transpose(h3,
                 [self.batch_size, 64, 64, 3], name='g_h4', with_w=True)
-    
-            return tf.nn.tanh(h4)
-
-    def sampler(self, z, y=None):
-        with tf.variable_scope("generator") as scope:
-            scope.reuse_variables()
-        #tf.get_variable_scope().reuse_variables()
-
-            h0 = tf.reshape(linear(z, self.gf_dim*8*4*4, 'g_h0_lin'),
-                            [-1, 4, 4, self.gf_dim * 8])
-            h0 = tf.nn.relu(self.g_bn0(h0, train=False))
-    
-            h1 = conv2d_transpose(h0, [self.batch_size, 8, 8, self.gf_dim*4], name='g_h1')
-            h1 = tf.nn.relu(self.g_bn1(h1, train=False))
-    
-            h2 = conv2d_transpose(h1, [self.batch_size, 16, 16, self.gf_dim*2], name='g_h2')
-            h2 = tf.nn.relu(self.g_bn2(h2, train=False))
-    
-            h3 = conv2d_transpose(h2, [self.batch_size, 32, 32, self.gf_dim*1], name='g_h3')
-            h3 = tf.nn.relu(self.g_bn3(h3, train=False))
-    
-            h4 = conv2d_transpose(h3, [self.batch_size, 64, 64, 3], name='g_h4')
     
             return tf.nn.tanh(h4)
 
