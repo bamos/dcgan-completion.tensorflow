@@ -12,7 +12,9 @@ from model import DCGAN
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--lr', type=float, default=0.01)
-parser.add_argument('--momentum', type=float, default=0.9)
+parser.add_argument('--beta1', type=float, default=0.9)
+parser.add_argument('--beta2', type=float, default=0.999)
+parser.add_argument('--eps', type=float, default=1e-8)
 parser.add_argument('--nIter', type=int, default=1000)
 parser.add_argument('--imgSize', type=int, default=64)
 parser.add_argument('--lam', type=float, default=0.1)
