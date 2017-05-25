@@ -151,8 +151,8 @@ class DCGAN(object):
 
 ======
 An existing model was found in the checkpoint directory.
-If you just cloned this repository, it's Brandon Amos'
-trained model for faces that's used in the post.
+If you just cloned this repository, it's a model for faces
+trained on the CelebA dataset for 20 epochs.
 If you want to train a new model from scratch,
 delete the checkpoint directory or specify a different
 --checkpoint_dir argument.
