@@ -66,7 +66,7 @@ def conv2d_transpose(input_, output_shape,
                      name="conv2d_transpose", with_w=False):
     with tf.variable_scope(name):
         # filter : [height, width, output_channels, in_channels]
-        w = tf.get_variable('w', [k_h, k_h, output_shape[-1], input_.get_shape()[-1]],
+        w = tf.get_variable('w', [k_h, k_w, output_shape[-1], input_.get_shape()[-1]],
                             initializer=tf.random_normal_initializer(stddev=stddev))
 
         try:
