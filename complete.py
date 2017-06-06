@@ -23,6 +23,7 @@ parser.add_argument('--outDir', type=str, default='completions')
 parser.add_argument('--maskType', type=str,
                     choices=['random', 'center', 'left', 'full'],
                     default='center')
+parser.add_argument('--centerScale', type=float, default=0.25)
 parser.add_argument('imgs', type=str, nargs='+')
 
 args = parser.parse_args()
