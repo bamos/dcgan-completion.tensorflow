@@ -311,10 +311,10 @@ Initializing a new one.
                     save_images(G_imgs[:batchSz,:,:,:], [nRows,nCols], imgName)
 
                     inv_masked_hat_images = np.multiply(G_imgs, 1.0-batch_mask)
-                    completeed = masked_images + inv_masked_hat_images
+                    completed = masked_images + inv_masked_hat_images
                     imgName = os.path.join(config.outDir,
                                            'completed/{:04d}.png'.format(i))
-                    save_images(completeed[:batchSz,:,:,:], [nRows,nCols], imgName)
+                    save_images(completed[:batchSz,:,:,:], [nRows,nCols], imgName)
 
     def discriminator(self, image, reuse=False):
         with tf.variable_scope("discriminator") as scope:
