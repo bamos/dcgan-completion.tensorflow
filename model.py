@@ -301,7 +301,7 @@ Initializing a new one.
                 zhats += - np.true_divide(config.lr * m_hat, (np.sqrt(v_hat) + config.eps))
                 zhats = np.clip(zhats, -1, 1)
 
-                if i % 50 == 0:
+                if i % config.outInterval == 0:
                     print(i, np.mean(loss[0:batchSz]))
                     imgName = os.path.join(config.outDir,
                                            'hats_imgs/{:04d}.png'.format(i))
