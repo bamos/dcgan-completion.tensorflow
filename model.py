@@ -253,6 +253,9 @@ Initializing a new one.
             mask[:,:c,:] = 0.0
         elif config.maskType == 'full':
             mask = np.ones(self.image_shape)
+        elif config.maskType == 'grid':
+            mask = np.zeros(self.image_shape)
+            mask[::4,::4,:] = 1.0
         else:
             assert(False)
 
