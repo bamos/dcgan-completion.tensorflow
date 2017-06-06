@@ -275,7 +275,7 @@ Initializing a new one.
             v = 0
 
             nRows = np.ceil(batchSz/8)
-            nCols = 8
+            nCols = min(8, batchSz)
             save_images(batch_images[:batchSz,:,:,:], [nRows,nCols],
                         os.path.join(config.outDir, 'before.png'))
             masked_images = np.multiply(batch_images, batch_mask)
@@ -306,7 +306,7 @@ Initializing a new one.
                     imgName = os.path.join(config.outDir,
                                            'hats_imgs/{:04d}.png'.format(i))
                     nRows = np.ceil(batchSz/8)
-                    nCols = 8
+                    nCols = min(8, batchSz)
                     save_images(G_imgs[:batchSz,:,:,:], [nRows,nCols], imgName)
 
                     inv_masked_hat_images = np.multiply(G_imgs, 1.0-batch_mask)
