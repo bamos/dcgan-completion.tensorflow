@@ -240,12 +240,11 @@ Initializing a new one.
             mask = np.ones(self.image_shape)
             mask[np.random.random(self.image_shape[:2]) < fraction_masked] = 0.0
         elif config.maskType == 'center':
-            scale = 0.25
-            assert(scale <= 0.5)
+            assert(config.centerScale <= 0.5)
             mask = np.ones(self.image_shape)
             sz = self.image_size
-            l = int(self.image_size*scale)
-            u = int(self.image_size*(1.0-scale))
+            l = int(self.image_size*config.centerScale)
+            u = int(self.image_size*(1.0-config.centerScale))
             mask[l:u, l:u, :] = 0.0
         elif config.maskType == 'left':
             mask = np.ones(self.image_shape)
