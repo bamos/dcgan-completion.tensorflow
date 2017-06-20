@@ -220,6 +220,7 @@ Initializing a new one.
     def complete(self, config):
         os.makedirs(os.path.join(config.outDir, 'hats_imgs'), exist_ok=True)
         os.makedirs(os.path.join(config.outDir, 'completed'), exist_ok=True)
+        os.makedirs(os.path.join(config.outDir, 'logs'), exist_ok=True)
 
         try:
             tf.global_variables_initializer().run()
@@ -282,6 +283,11 @@ Initializing a new one.
             masked_images = np.multiply(batch_images, batch_mask)
             save_images(masked_images[:batchSz,:,:,:], [nRows,nCols],
                         os.path.join(config.outDir, 'masked.png'))
+            for img in range(batchSz):
+                with open(os.path.join(config.outDir, 'logs/hats_{:02d}.log'.format(img)), 'a') as f:
+                    f.write('iter loss ' +
+                            ' '.join(['z{}'.format(zi) for zi in range(self.z_dim)]) +
+                            '\n')
 
             for i in xrange(config.nIter):
                 fd = {
@@ -292,6 +298,11 @@ Initializing a new one.
                 }
                 run = [self.complete_loss, self.grad_complete_loss, self.G]
                 loss, g, G_imgs = self.sess.run(run, feed_dict=fd)
+
+                for img in range(batchSz):
+                    with open(os.path.join(config.outDir, 'logs/hats_{:02d}.log'.format(img)), 'ab') as f:
+                        f.write('{} {} '.format(i, loss[img]).encode())
+                        np.savetxt(f, zhats[img:img+1])
 
                 if i % config.outInterval == 0:
                     print(i, np.mean(loss[0:batchSz]))
