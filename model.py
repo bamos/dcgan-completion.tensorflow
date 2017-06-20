@@ -329,6 +329,25 @@ Initializing a new one.
                     zhats += - np.true_divide(config.lr * m_hat, (np.sqrt(v_hat) + config.eps))
                     zhats = np.clip(zhats, -1, 1)
 
+                elif config.approach == 'hmc':
+                    # Sample example completions with HMC (not in paper)
+                    assert(self.batch_size == 1)
+                    zhats_old = np.copy(zhats)
+                    v = np.random.randn(self.batch_size, self.z_dim)
+                    logprob_old = config.hmcBeta * loss[0] + np.sum(v**2)/2
+
+                    for steps in range(config.hmcL):
+                        v -= config.hmcEps/2 * config.hmcBeta * g[0]
+                        zhats += config.hmcEps * v
+                        np.copyto(zhats, np.clip(zhats, -1, 1))
+                        loss, g, _ = self.sess.run(run, feed_dict=fd)
+                        v -= config.hmcEps/2 * config.hmcBeta * g[0]
+
+                    logprob = config.hmcBeta * loss[0] + np.sum(v**2)/2
+                    accept = np.exp(logprob_old - logprob)
+                    if accept < 1 and np.random.uniform() > accept:
+                        np.copyto(zhats, zhats_old)
+
                 else:
                     assert(False)
 
