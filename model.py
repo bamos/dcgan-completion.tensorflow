@@ -293,15 +293,6 @@ Initializing a new one.
                 run = [self.complete_loss, self.grad_complete_loss, self.G]
                 loss, g, G_imgs = self.sess.run(run, feed_dict=fd)
 
-                m_prev = np.copy(m)
-                v_prev = np.copy(v)
-                m = config.beta1 * m_prev + (1 - config.beta1) * g[0]
-                v = config.beta2 * v_prev + (1 - config.beta2) * np.multiply(g[0], g[0])
-                m_hat = m / (1 - config.beta1 ** (i + 1))
-                v_hat = v / (1 - config.beta2 ** (i + 1))
-                zhats += - np.true_divide(config.lr * m_hat, (np.sqrt(v_hat) + config.eps))
-                zhats = np.clip(zhats, -1, 1)
-
                 if i % config.outInterval == 0:
                     print(i, np.mean(loss[0:batchSz]))
                     imgName = os.path.join(config.outDir,
@@ -315,6 +306,15 @@ Initializing a new one.
                     imgName = os.path.join(config.outDir,
                                            'completed/{:04d}.png'.format(i))
                     save_images(completed[:batchSz,:,:,:], [nRows,nCols], imgName)
+
+                m_prev = np.copy(m)
+                v_prev = np.copy(v)
+                m = config.beta1 * m_prev + (1 - config.beta1) * g[0]
+                v = config.beta2 * v_prev + (1 - config.beta2) * np.multiply(g[0], g[0])
+                m_hat = m / (1 - config.beta1 ** (i + 1))
+                v_hat = v / (1 - config.beta2 ** (i + 1))
+                zhats += - np.true_divide(config.lr * m_hat, (np.sqrt(v_hat) + config.eps))
+                zhats = np.clip(zhats, -1, 1)
 
     def discriminator(self, image, reuse=False):
         with tf.variable_scope("discriminator") as scope:
