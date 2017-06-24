@@ -16,7 +16,7 @@ from utils import *
 
 class DCGAN(object):
     def __init__(self, sess, image_size=64, is_crop=False,
-                 batch_size=64, sample_size=64,
+                 batch_size=64, sample_size=64, lowres=8,
                  z_dim=100, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=3,
                  checkpoint_dir=None, lam=0.1):
@@ -25,6 +25,7 @@ class DCGAN(object):
         Args:
             sess: TensorFlow session
             batch_size: The size of batch. Should be specified before training.
+            lowres: (optional) Low resolution image/mask shrink factor. [8]
             z_dim: (optional) Dimension of dim for Z. [100]
             gf_dim: (optional) Dimension of gen filters in first conv layer. [64]
             df_dim: (optional) Dimension of discrim filters in first conv layer. [64]
@@ -37,7 +38,11 @@ class DCGAN(object):
         self.batch_size = batch_size
         self.image_size = image_size
         self.sample_size = sample_size
-        self.image_shape = [image_size, image_size, 3]
+        self.image_shape = [image_size, image_size, c_dim]
+
+        self.lowres = lowres
+        self.lowres_size = image_size // lowres
+        self.lowres_shape = [self.lowres_size, self.lowres_size, c_dim]
 
         self.z_dim = z_dim
 
@@ -49,7 +54,7 @@ class DCGAN(object):
 
         self.lam = lam
 
-        self.c_dim = 3
+        self.c_dim = c_dim
 
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bn1 = batch_norm(name='d_bn1')
@@ -70,10 +75,16 @@ class DCGAN(object):
         self.is_training = tf.placeholder(tf.bool, name='is_training')
         self.images = tf.placeholder(
             tf.float32, [None] + self.image_shape, name='real_images')
+        self.lowres_images = tf.reduce_mean(tf.reshape(self.images,
+            [self.batch_size, self.lowres_size, self.lowres,
+             self.lowres_size, self.lowres, self.c_dim]), [2, 4])
         self.z = tf.placeholder(tf.float32, [None, self.z_dim], name='z')
         self.z_sum = tf.summary.histogram("z", self.z)
 
         self.G = self.generator(self.z)
+        self.lowres_G = tf.reduce_mean(tf.reshape(self.G,
+            [self.batch_size, self.lowres_size, self.lowres,
+             self.lowres_size, self.lowres, self.c_dim]), [2, 4])
         self.D, self.D_logits = self.discriminator(self.images)
 
         self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
@@ -108,10 +119,14 @@ class DCGAN(object):
         self.saver = tf.train.Saver(max_to_keep=1)
 
         # Completion.
-        self.mask = tf.placeholder(tf.float32, [None] + self.image_shape, name='mask')
+        self.mask = tf.placeholder(tf.float32, self.image_shape, name='mask')
+        self.lowres_mask = tf.placeholder(tf.float32, self.lowres_shape, name='lowres_mask')
         self.contextual_loss = tf.reduce_sum(
             tf.contrib.layers.flatten(
                 tf.abs(tf.multiply(self.mask, self.G) - tf.multiply(self.mask, self.images))), 1)
+        self.contextual_loss += tf.reduce_sum(
+            tf.contrib.layers.flatten(
+                tf.abs(tf.multiply(self.lowres_mask, self.lowres_G) - tf.multiply(self.lowres_mask, self.lowres_images))), 1)
         self.perceptual_loss = self.g_loss
         self.complete_loss = self.contextual_loss + self.lam*self.perceptual_loss
         self.grad_complete_loss = tf.gradients(self.complete_loss, self.z)
@@ -234,6 +249,7 @@ Initializing a new one.
         nImgs = len(config.imgs)
 
         batch_idxs = int(np.ceil(nImgs/self.batch_size))
+        lowres_mask = np.zeros(self.lowres_shape)
         if config.maskType == 'random':
             fraction_masked = 0.2
             mask = np.ones(self.image_shape)
@@ -254,6 +270,9 @@ Initializing a new one.
         elif config.maskType == 'grid':
             mask = np.zeros(self.image_shape)
             mask[::4,::4,:] = 1.0
+        elif config.maskType == 'lowres':
+            lowres_mask = np.ones(self.lowres_shape)
+            mask = np.zeros(self.image_shape)
         else:
             assert(False)
 
@@ -271,7 +290,6 @@ Initializing a new one.
                 batch_images = np.pad(batch_images, padSz, 'constant')
                 batch_images = batch_images.astype(np.float32)
 
-            batch_mask = np.resize(mask, [self.batch_size] + self.image_shape)
             zhats = np.random.uniform(-1, 1, size=(self.batch_size, self.z_dim))
             m = 0
             v = 0
@@ -280,9 +298,16 @@ Initializing a new one.
             nCols = min(8, batchSz)
             save_images(batch_images[:batchSz,:,:,:], [nRows,nCols],
                         os.path.join(config.outDir, 'before.png'))
-            masked_images = np.multiply(batch_images, batch_mask)
+            masked_images = np.multiply(batch_images, mask)
             save_images(masked_images[:batchSz,:,:,:], [nRows,nCols],
                         os.path.join(config.outDir, 'masked.png'))
+            if lowres_mask.any():
+                lowres_images = np.reshape(batch_images, [self.batch_size, self.lowres_size, self.lowres,
+                    self.lowres_size, self.lowres, self.c_dim]).mean(4).mean(2)
+                lowres_images = np.multiply(lowres_images, lowres_mask)
+                lowres_images = np.repeat(np.repeat(lowres_images, self.lowres, 1), self.lowres, 2)
+                save_images(lowres_images[:batchSz,:,:,:], [nRows,nCols],
+                            os.path.join(config.outDir, 'lowres.png'))
             for img in range(batchSz):
                 with open(os.path.join(config.outDir, 'logs/hats_{:02d}.log'.format(img)), 'a') as f:
                     f.write('iter loss ' +
@@ -292,12 +317,13 @@ Initializing a new one.
             for i in xrange(config.nIter):
                 fd = {
                     self.z: zhats,
-                    self.mask: batch_mask,
+                    self.mask: mask,
+                    self.lowres_mask: lowres_mask,
                     self.images: batch_images,
                     self.is_training: False
                 }
-                run = [self.complete_loss, self.grad_complete_loss, self.G]
-                loss, g, G_imgs = self.sess.run(run, feed_dict=fd)
+                run = [self.complete_loss, self.grad_complete_loss, self.G, self.lowres_G]
+                loss, g, G_imgs, lowres_G_imgs = self.sess.run(run, feed_dict=fd)
 
                 for img in range(batchSz):
                     with open(os.path.join(config.outDir, 'logs/hats_{:02d}.log'.format(img)), 'ab') as f:
@@ -311,8 +337,13 @@ Initializing a new one.
                     nRows = np.ceil(batchSz/8)
                     nCols = min(8, batchSz)
                     save_images(G_imgs[:batchSz,:,:,:], [nRows,nCols], imgName)
+                    if lowres_mask.any():
+                        imgName = imgName[:-4] + '.lowres.png'
+                        save_images(np.repeat(np.repeat(lowres_G_imgs[:batchSz,:,:,:],
+                                              self.lowres, 1), self.lowres, 2),
+                                    [nRows,nCols], imgName)
 
-                    inv_masked_hat_images = np.multiply(G_imgs, 1.0-batch_mask)
+                    inv_masked_hat_images = np.multiply(G_imgs, 1.0-mask)
                     completed = masked_images + inv_masked_hat_images
                     imgName = os.path.join(config.outDir,
                                            'completed/{:04d}.png'.format(i))
@@ -340,7 +371,7 @@ Initializing a new one.
                         v -= config.hmcEps/2 * config.hmcBeta * g[0]
                         zhats += config.hmcEps * v
                         np.copyto(zhats, np.clip(zhats, -1, 1))
-                        loss, g, _ = self.sess.run(run, feed_dict=fd)
+                        loss, g, _, _ = self.sess.run(run, feed_dict=fd)
                         v -= config.hmcEps/2 * config.hmcBeta * g[0]
 
                     logprob = config.hmcBeta * loss[0] + np.sum(v**2)/2
