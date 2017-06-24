@@ -108,7 +108,7 @@ class DCGAN(object):
         self.saver = tf.train.Saver(max_to_keep=1)
 
         # Completion.
-        self.mask = tf.placeholder(tf.float32, [None] + self.image_shape, name='mask')
+        self.mask = tf.placeholder(tf.float32, self.image_shape, name='mask')
         self.contextual_loss = tf.reduce_sum(
             tf.contrib.layers.flatten(
                 tf.abs(tf.multiply(self.mask, self.G) - tf.multiply(self.mask, self.images))), 1)
@@ -271,7 +271,6 @@ Initializing a new one.
                 batch_images = np.pad(batch_images, padSz, 'constant')
                 batch_images = batch_images.astype(np.float32)
 
-            batch_mask = np.resize(mask, [self.batch_size] + self.image_shape)
             zhats = np.random.uniform(-1, 1, size=(self.batch_size, self.z_dim))
             m = 0
             v = 0
@@ -280,7 +279,7 @@ Initializing a new one.
             nCols = min(8, batchSz)
             save_images(batch_images[:batchSz,:,:,:], [nRows,nCols],
                         os.path.join(config.outDir, 'before.png'))
-            masked_images = np.multiply(batch_images, batch_mask)
+            masked_images = np.multiply(batch_images, mask)
             save_images(masked_images[:batchSz,:,:,:], [nRows,nCols],
                         os.path.join(config.outDir, 'masked.png'))
             for img in range(batchSz):
@@ -292,7 +291,7 @@ Initializing a new one.
             for i in xrange(config.nIter):
                 fd = {
                     self.z: zhats,
-                    self.mask: batch_mask,
+                    self.mask: mask,
                     self.images: batch_images,
                     self.is_training: False
                 }
@@ -312,7 +311,7 @@ Initializing a new one.
                     nCols = min(8, batchSz)
                     save_images(G_imgs[:batchSz,:,:,:], [nRows,nCols], imgName)
 
-                    inv_masked_hat_images = np.multiply(G_imgs, 1.0-batch_mask)
+                    inv_masked_hat_images = np.multiply(G_imgs, 1.0-mask)
                     completed = masked_images + inv_masked_hat_images
                     imgName = os.path.join(config.outDir,
                                            'completed/{:04d}.png'.format(i))
