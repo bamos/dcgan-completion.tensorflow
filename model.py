@@ -37,7 +37,7 @@ class DCGAN(object):
         self.batch_size = batch_size
         self.image_size = image_size
         self.sample_size = sample_size
-        self.image_shape = [image_size, image_size, 3]
+        self.image_shape = [image_size, image_size, c_dim]
 
         self.z_dim = z_dim
 
@@ -49,7 +49,7 @@ class DCGAN(object):
 
         self.lam = lam
 
-        self.c_dim = 3
+        self.c_dim = c_dim
 
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bn1 = batch_norm(name='d_bn1')
