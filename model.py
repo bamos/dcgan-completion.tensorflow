@@ -377,10 +377,10 @@ Initializing a new one.
 
                 elif config.approach == 'hmc':
                     # Sample example completions with HMC (not in paper)
-                    assert(self.batch_size == 1)
                     zhats_old = np.copy(zhats)
+                    loss_old = np.copy(loss)
                     v = np.random.randn(self.batch_size, self.z_dim)
-                    logprob_old = config.hmcBeta * loss[0] + np.sum(v**2)/2
+                    v_old = np.copy(v)
 
                     for steps in range(config.hmcL):
                         v -= config.hmcEps/2 * config.hmcBeta * g[0]
@@ -389,10 +389,14 @@ Initializing a new one.
                         loss, g, _, _ = self.sess.run(run, feed_dict=fd)
                         v -= config.hmcEps/2 * config.hmcBeta * g[0]
 
-                    logprob = config.hmcBeta * loss[0] + np.sum(v**2)/2
-                    accept = np.exp(logprob_old - logprob)
-                    if accept < 1 and np.random.uniform() > accept:
-                        np.copyto(zhats, zhats_old)
+                    for img in range(batchSz):
+                        logprob_old = config.hmcBeta * loss_old[img] + np.sum(v_old[img]**2)/2
+                        logprob = config.hmcBeta * loss[img] + np.sum(v[img]**2)/2
+                        accept = np.exp(logprob_old - logprob)
+                        if accept < 1 and np.random.uniform() > accept:
+                            np.copyto(zhats[img], zhats_old[img])
+
+                    config.hmcBeta *= config.hmcAnneal
 
                 else:
                     assert(False)
