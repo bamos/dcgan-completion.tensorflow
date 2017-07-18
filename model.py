@@ -71,7 +71,7 @@ class DCGAN(object):
 
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bns = [
-            batch_norm(name='d_bn{}'.format(i,)) for i in range(4)]
+            batch_norm(name='d_bn{}'.format(i+1,)) for i in range(3)]
 
         log_size = int(math.log(image_size) / math.log(2))
         self.g_bns = [
@@ -411,7 +411,7 @@ Initializing a new one.
             h1 = lrelu(self.d_bns[0](conv2d(h0, self.df_dim*2, name='d_h1_conv'), self.is_training))
             h2 = lrelu(self.d_bns[1](conv2d(h1, self.df_dim*4, name='d_h2_conv'), self.is_training))
             h3 = lrelu(self.d_bns[2](conv2d(h2, self.df_dim*8, name='d_h3_conv'), self.is_training))
-            h4 = linear(tf.reshape(h3, [-1, 8192]), 1, 'd_h4_lin')
+            h4 = linear(tf.reshape(h3, [-1, 8192]), 1, 'd_h3_lin')
     
             return tf.nn.sigmoid(h4), h4
 
@@ -425,7 +425,7 @@ Initializing a new one.
             hs[0] = tf.nn.relu(self.g_bns[0](hs[0], self.is_training))
 
             i = 1 # Iteration number.
-            depth_mul = 8  # Depth decreases as spatial component increases.
+            depth_mul = self.image_size // 16  # Depth decreases as spatial component increases.
             size = 8  # Size increases as depth decreases.
 
             while size < self.image_size:
